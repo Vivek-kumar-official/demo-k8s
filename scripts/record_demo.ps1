@@ -35,7 +35,7 @@ Read-Host "Run the commands and narrate their output, then press Enter"
 
 # Build image
 PauseAndSay "Build image" "Build the container image used for all releases. Narrate the Dockerfile choices."
-Write-Host "cd demo-k8s; docker build -t demo-service:1.0 ." -ForegroundColor Gray
+Write-Host "docker build -t demo-service:1.0 ." -ForegroundColor Gray
 Read-Host "Run the build (or run from WSL), then press Enter"
 
 # Deploy v1
@@ -45,7 +45,7 @@ Read-Host "Run these commands and narrate; when pods are Ready press Enter"
 
 # Start traffic
 PauseAndSay "Start traffic" "Start the in-cluster traffic client and begin logging. Explain the client config (1 req/s, 2s timeout)."
-Write-Host "kubectl apply -f traffic-pod.yaml\nkubectl logs -f pod/traffic-client -c traffic --since=1s > traffic.log &" -ForegroundColor Gray
+Write-Host "kubectl apply -f traffic-pod.yaml\n# collect the authoritative log (do not background -f)\nkubectl logs pod/traffic-client -c traffic > traffic.log" -ForegroundColor Gray
 Read-Host "Start traffic and confirm logs are being produced, then press Enter"
 
 # Rollout v2
@@ -55,7 +55,7 @@ Read-Host "Run the rollout script; narrate the rollout status until it succeeds,
 
 # Observe v2 serving
 PauseAndSay "Observe v2" "Show that v2 pods become Ready after ~30s and serve /version through the Service."
-Write-Host "kubectl get pods -l app=demo-service -o wide\nkubectl exec -it pod/traffic-client -c traffic -- tail -n 50 /traffic.log" -ForegroundColor Gray
+Write-Host "kubectl get pods -l app=demo-service -o wide\nkubectl logs pod/traffic-client -c traffic --tail=50" -ForegroundColor Gray
 Read-Host "Show traffic.log entries for v2, narrate, then press Enter"
 
 # Rollout v3-broken

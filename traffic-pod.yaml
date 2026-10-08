@@ -10,4 +10,15 @@ spec:
     command:
       - "sh"
       - "-c"
-      - "while true; do date -Is; curl -sS -m 2 http://demo-service:8080/version -w ' status:%{http_code} time:%{time_total}\\n' || echo 'curl failed'; sleep 1; done"
+      - |
+        while true; do
+          ts=$(date -Is)
+          out=$(curl -sS -m 2 -w "|||%{http_code}|||%{time_total}" http://demo-service:8080/version) || out="|||ERR|||0"
+          body=${out%%|||*}
+          rest=${out#*|||}
+          code=${rest%%|||*}
+          time=${rest##*|||}
+          # structured single-line log: ISO timestamp, status, time(s), body(JSON or empty)
+          echo "$ts status=$code time=$time body=$body"
+          sleep 1
+        done

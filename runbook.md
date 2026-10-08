@@ -13,7 +13,6 @@ Quick Commands
 1) Build image and load into kind (if using kind):
 
 ```powershell
-cd demo-k8s
 docker build -t demo-service:1.0 .
 kind load docker-image demo-service:1.0 --name demo
 ```
@@ -32,8 +31,10 @@ kubectl describe deployment demo-service > deployment-v1-describe.txt
 3) Start traffic client (records to `traffic.log`):
 
 ```powershell
-kubectl run traffic-client --image=curlimages/curl:8.2.1 --restart=Never --overrides='{"spec":{"containers":[{"name":"traffic","image":"curlimages/curl:8.2.1","command":["sh","-c","while true; do date -Is; curl -sS -m 2 http://demo-service:8080/version -w ' status:%{http_code} time:%{time_total}\\n' || echo 'curl failed'; sleep 1; done"]}],"restartPolicy":"Never"}}'
-kubectl logs -f pod/traffic-client > traffic.log
+# apply the bundled traffic pod which emits structured per-second logs to stdout
+kubectl apply -f traffic-pod.yaml
+# collect the authoritative traffic log (do not rely on -f in background)
+kubectl logs pod/traffic-client -c traffic > traffic.log
 ```
 
 4) Roll to `v2` (30s readiness delay) while traffic runs:
@@ -70,13 +71,13 @@ kubectl describe deployment demo-service > deployment-recovered-describe.txt
 7) Stop traffic and collect logs:
 
 ```powershell
-kubectl logs pod/traffic-client > traffic.log || true
+kubectl logs pod/traffic-client -c traffic > traffic.log || true
 kubectl delete pod traffic-client --ignore-not-found
 ```
 
 Evidence to include
-- `traffic.log` — timestamped per-second requests
-- `pods-*.txt`, `deployment-*-describe.txt`, `pods-v3-describe.txt`, `events-v3.txt`, `endpoints-v3.yaml`
+- `artifacts/traffic.log` — timestamped per-second structured requests
+- `artifacts/pods-v3.txt`, `artifacts/pods-v3-describe.txt`, `artifacts/deployment-v3-describe.txt`, `artifacts/events-v3.txt`, `artifacts/endpoints-v3.yaml`
 
 Alert suggestion
 - Name: Deployment rollout stalled

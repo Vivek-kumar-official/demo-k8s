@@ -4,14 +4,24 @@ import re
 from collections import Counter
 
 def parse_line(line):
-    # Example lines:
-    # 2026-10-08T12:00:00+00:00 {"version":"v1","instance":"pod-..."} status:200 time:0.123
+    # Support structured lines produced by the traffic client, for example:
+    # 2026-10-08T12:00:00+00:00 status=200 time=0.123 body={"version":"v1","instance":"pod-..."}
+    # or fallback where body may be empty.
     line = line.strip()
     if not line:
         return None
-    m_status = re.search(r"status:(\d{3})", line)
-    status = int(m_status.group(1)) if m_status else None
-    m_json = re.search(r"(\{.*\})", line)
+    # status can be in two formats produced by different clients: 'status=200' or 'status:200', or 'ERR'
+    m_status = re.search(r"status=(\d+|ERR)", line)
+    if not m_status:
+        m_status = re.search(r"status:(\d{3})", line)
+    status = None
+    if m_status:
+        s = m_status.group(1)
+        status = int(s) if s.isdigit() else None
+    m_time = re.search(r"time=([0-9\.]+)", line)
+    time_total = float(m_time.group(1)) if m_time else None
+    # JSON body may appear either as body={...} (new format) or as a bare {..} on its own line
+    m_json = re.search(r"body=(\{.*\})", line) or re.search(r"(\{.*\})", line)
     version = None
     instance = None
     if m_json:
@@ -22,7 +32,7 @@ def parse_line(line):
             instance = j.get("instance")
         except Exception:
             pass
-    return {"raw": line, "status": status, "version": version, "instance": instance}
+    return {"raw": line, "status": status, "time": time_total, "version": version, "instance": instance}
 
 def analyze(fp):
     total = 0

@@ -1,3 +1,17 @@
 __pycache__/
 *.pyc
 traffic-client-logs.txt
+
+# Generated artifacts and logs
+artifacts/
+artifacts.zip
+traffic.log
+*.log
+
+# Editor
+.vscode/
+.DS_Store
+
+# Binaries
+kubectl.exe
+docker-desktop/
