@@ -1,0 +1,13 @@
+﻿apiVersion: v1
+kind: Pod
+metadata:
+  name: traffic-client
+spec:
+  restartPolicy: Never
+  containers:
+  - name: traffic
+    image: curlimages/curl:8.2.1
+    command:
+      - "sh"
+      - "-c"
+      - "while true; do date -Is; curl -sS -m 2 http://demo-service:8080/version -w ' status:%{http_code} time:%{time_total}\\n' || echo 'curl failed'; sleep 1; done"
